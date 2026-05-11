@@ -40,42 +40,59 @@ Return a JSON object with:
 
 Return ONLY the JSON object, no markdown formatting around it.`;
 
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Here are the email sources to draw from:\n\n${options.emailContent}` },
-      ],
-      temperature: 0.7,
-      max_tokens: 4096,
-    }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`LLM API error: ${response.status} - ${errorText}`);
+  try {
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Here are the email sources to draw from:\n\n${options.emailContent}` },
+        ],
+        temperature: 0.7,
+        max_tokens: 4096,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`LLM API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json() as { choices: Array<{ message: { content: string } }> };
+    const rawContent = data.choices[0]?.message?.content;
+
+    if (!rawContent) {
+      throw new Error('LLM returned empty response');
+    }
+
+    // Parse JSON from the response — strip any markdown code fences
+    const jsonString = rawContent.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+
+    let parsed: GeneratedDraft;
+    try {
+      parsed = JSON.parse(jsonString) as GeneratedDraft;
+    } catch {
+      throw new Error(`LLM returned invalid JSON: ${jsonString.slice(0, 200)}`);
+    }
+
+    if (!parsed.title || !parsed.subtitle || !parsed.html_content) {
+      throw new Error('LLM response missing required fields: title, subtitle, html_content');
+    }
+
+    return parsed;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
   }
-
-  const data = await response.json() as { choices: Array<{ message: { content: string } }> };
-  const rawContent = data.choices[0]?.message?.content;
-
-  if (!rawContent) {
-    throw new Error('LLM returned empty response');
-  }
-
-  // Parse JSON from the response — strip any markdown code fences
-  const jsonString = rawContent.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
-  const parsed = JSON.parse(jsonString) as GeneratedDraft;
-
-  if (!parsed.title || !parsed.subtitle || !parsed.html_content) {
-    throw new Error('LLM response missing required fields: title, subtitle, html_content');
-  }
-
-  return parsed;
 }

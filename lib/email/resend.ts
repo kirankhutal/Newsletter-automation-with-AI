@@ -13,6 +13,7 @@ export interface NotificationOptions {
 
 export async function sendNotification(options: NotificationOptions): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Banking on AI <automation@yourdomain.com>';
   const toEmail = process.env.NOTIFICATION_EMAIL || 'kirankhutal@gmail.com';
 
   if (!apiKey) {
@@ -60,7 +61,7 @@ export async function sendNotification(options: NotificationOptions): Promise<vo
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'Banking on AI <automation@yourdomain.com>',
+      from: fromEmail,
       to: toEmail,
       subject,
       html: htmlContent,

@@ -58,6 +58,7 @@ describe('Gmail Fetcher', () => {
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: false,
       status: 400,
+      text: async () => 'mock error',
     } as Response);
 
     await expect(fetchRelevantEmails()).rejects.toThrow('Google OAuth failed');

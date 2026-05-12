@@ -14,7 +14,6 @@ export interface DraftMetadata {
   linkCount: number;
   pillarsFound: string[];
   qualityChecks: {
-    passed: boolean;
     subjectLength: boolean;
     wordCount: boolean;
     linkCount: boolean;
@@ -155,7 +154,7 @@ export function getAnalytics() {
   }
   
   const totalDrafts = drafts.length;
-  const successfulDrafts = drafts.filter(d => d.qualityChecks.passed).length;
+  const successfulDrafts = drafts.filter(d => d.qualityChecks.subjectLength && d.qualityChecks.wordCount && d.qualityChecks.linkCount && d.qualityChecks.hasPillars && d.qualityChecks.validHTML).length;
   const totalCost = drafts.reduce((sum, d) => sum + d.llmCost, 0);
   const totalWords = drafts.reduce((sum, d) => sum + d.wordCount, 0);
   

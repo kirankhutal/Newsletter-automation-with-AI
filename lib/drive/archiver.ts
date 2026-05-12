@@ -1,6 +1,8 @@
 // lib/drive/archiver.ts
 // Google Drive API — saves newsletter markdown copy to archive folder
 
+import { getGoogleAccessToken } from '../auth/google';
+
 export interface ArchiveOptions {
   weekDescription: string;
   title: string;
@@ -8,26 +10,6 @@ export interface ArchiveOptions {
   content: string;
   wordCount: number;
   generatedAt: string;
-}
-
-async function getGoogleAccessToken(): Promise<string> {
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN!,
-      grant_type: 'refresh_token',
-    }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`Google OAuth failed: ${res.status}`);
-  }
-
-  const { access_token } = await res.json() as { access_token: string };
-  return access_token;
 }
 
 export async function archiveToDrive(options: ArchiveOptions): Promise<void> {

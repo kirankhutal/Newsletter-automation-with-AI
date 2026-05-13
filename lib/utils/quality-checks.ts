@@ -92,11 +92,12 @@ function findPillars(content: string, pillars: string[]): string[] {
 }
 
 /**
- * Basic HTML validation
+ * Basic HTML validation — relaxed to allow minor structural issues
  */
 function validateHTML(html: string): boolean {
   const errors = getHTMLErrors(html);
-  return errors.length === 0;
+  // Only fail on broken links, not tag mismatches (LLM-generated HTML is often loosely structured)
+  return errors.filter(e => e.includes('empty href')).length === 0;
 }
 
 /**

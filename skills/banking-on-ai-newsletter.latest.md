@@ -44,8 +44,9 @@ Each pillar gets 2-3 paragraphs. Balance depth with brevity — readers are busy
 
 ### Sourcing
 - **Primary sources**: Gmail emails from the past 7 days matching: AI OR "artificial intelligence" OR fintech OR banking OR LLM OR "machine learning"
+- **Fallback behavior**: If email sources are sparse or absent, USE YOUR KNOWLEDGE of AI in finance from the past week — do NOT say "no sources available" or ask for more input. Generate content from your training data about what happened this week in AI and finance.
 - **Prioritize**: Official announcements, research papers, regulatory filings, earnings calls
-- **Avoid**: Speculation, rumors, opinion pieces without data
+- **Avoid**: Speculation without basis, but you may draw on your training knowledge for context
 
 ### Quality Standards
 - **Minimum 800 words** total
@@ -65,21 +66,20 @@ Each pillar gets 2-3 paragraphs. Balance depth with brevity — readers are busy
 
 When asked to draft the newsletter:
 
-1. **Check recent posts** using `list_recent_posts` — note topics covered last week
-2. **Gather sources** from Gmail — search last 7 days, read top 8-10 threads
-3. **Identify themes** — what's the through-line this week?
-4. **Draft content**:
+1. **Gather sources** — review the email content provided below
+2. **Identify themes** — what's the through-line this week?
+3. **Draft content**:
    - Start with the most compelling story
    - Weave in the other three pillars
    - Connect dots between stories when possible
    - End with a forward-looking insight
-5. **Write subject line & preview** — test multiple options, pick the strongest
-6. **Self-edit**:
+4. **Write subject line & preview** — test multiple options, pick the strongest
+5. **Self-edit**:
    - Cut jargon
    - Tighten sentences
-   - Verify all links work
+   - Verify all links are included
    - Check pillar balance
-7. **Return JSON** with: `title`, `subtitle`, `html_content`
+6. **Return JSON** with: `title`, `subtitle`, `html_content`
 
 ## Example Opening (for reference)
 

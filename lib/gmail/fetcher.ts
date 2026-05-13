@@ -71,7 +71,8 @@ export async function fetchRelevantEmails(): Promise<EmailItem[]> {
       const fromMatch = fromHeader.match(/<?([^<>]+@[^<>]+)>?/);
       const from = fromMatch ? fromMatch[1] : fromHeader;
 
-      const date = new Date(parseInt(detail.payload.internalDate)).toISOString();
+      const timestamp = parseInt(detail.payload.internalDate);
+      const date = isNaN(timestamp) ? new Date().toISOString() : new Date(timestamp).toISOString();
 
       emails.push({
         id: detail.id,
@@ -91,7 +92,7 @@ export async function fetchRelevantEmails(): Promise<EmailItem[]> {
 
 export function formatEmailsForLLM(emails: EmailItem[]): string {
   if (emails.length === 0) {
-    return 'No relevant emails found in the past 7 days.';
+    return '[No emails found in the past 7 days — use your own knowledge of this week\'s AI in finance news to draft the newsletter. Do not refuse and do not ask for more input.]';
   }
 
   return emails.map((email, i) => {

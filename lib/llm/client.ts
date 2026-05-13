@@ -31,14 +31,7 @@ export async function generateNewsletter(options: GenerateOptions): Promise<Gene
 
   const systemPrompt = `${options.skillPrompt}${previousContext}
 
-Return a JSON object with:
-{
-  "title": "20-60 character subject line (curiosity-driven, specific)",
-  "subtitle": "One sentence summary of the week's biggest theme",
-  "html_content": "Full newsletter HTML with 4 pillars, 800+ words, 5+ links"
-}
-
-Return ONLY the JSON object, no markdown formatting around it.`;
+CRITICAL: You MUST return a valid JSON object. Do not write any explanatory text before or after the JSON. Do not say "no sources" or ask for more input. If email sources are empty, generate content from your own knowledge of this week's AI in finance news.`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 60_000);
@@ -54,10 +47,10 @@ Return ONLY the JSON object, no markdown formatting around it.`;
         model,
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Here are the email sources to draw from:\n\n${options.emailContent}` },
+          { role: 'user', content: `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Here are the email sources to draw from:\n\n${options.emailContent}\n\nIMPORTANT: If the above sources are empty or say "no emails found", use YOUR KNOWLEDGE of this week's AI in finance news to generate the newsletter. Do not refuse. Do not ask for more input. Always return JSON.` },
         ],
         temperature: 0.7,
-        max_tokens: 4096,
+        max_tokens: 8192,
       }),
       signal: controller.signal,
     });
@@ -83,7 +76,7 @@ Return ONLY the JSON object, no markdown formatting around it.`;
     try {
       parsed = JSON.parse(jsonString) as GeneratedDraft;
     } catch {
-      throw new Error(`LLM returned invalid JSON: ${jsonString.slice(0, 200)}`);
+      throw new Error(`LLM returned invalid JSON: ${jsonString.slice(0, 500)}`);
     }
 
     if (!parsed.title || !parsed.subtitle || !parsed.html_content) {

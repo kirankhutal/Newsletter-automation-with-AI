@@ -54,3 +54,4 @@ lib/metadata/feedback.json
 tmp/
 temp/
 *.tmp
+.env*.local

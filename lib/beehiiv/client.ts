@@ -15,14 +15,17 @@ export interface BeehiivPostResult {
 
 export async function createBeehiivDraft(options: CreatePostOptions): Promise<BeehiivPostResult> {
   const apiKey = process.env.BEEHIIV_API_KEY;
-  const publicationId = process.env.BEEHIIV_PUBLICATION_ID;
+  // Beehiiv expects IDs in format: pub_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+  const normalizedId = publicationId.startsWith('pub_')
+    ? publicationId
+    : `pub_${publicationId}`;
 
   if (!apiKey || !publicationId) {
     throw new Error('Missing Beehiiv configuration. Set BEEHIIV_API_KEY and BEEHIIV_PUBLICATION_ID');
   }
 
   const response = await fetch(
-    `https://api.beehiiv.com/v2/publications/${publicationId}/posts`,
+    `https://api.beehiiv.com/v2/publications/${normalizedId}/posts`,
     {
       method: 'POST',
       headers: {

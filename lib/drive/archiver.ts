@@ -65,7 +65,16 @@ ${options.content.replace(/<[^>]*>/g, '').trim()}
     console.error(`Google Drive archive failed: ${response.status} - ${errorText}`);
     // Don't throw — archive failure should not block the pipeline
   } else {
-    const data = await response.json() as { name: string; id: string };
-    console.log(`Archived to Drive: ${data.name} (${data.id})`);
+    const text = await response.text();
+    if (!text) {
+      console.log(`Google Drive archive: 200 OK but empty response body`);
+    } else {
+      try {
+        const data = JSON.parse(text) as Record<string, unknown>;
+        console.log(`Google Drive archive response: ${JSON.stringify(data)}`);
+      } catch {
+        console.log(`Google Drive archive: 200 OK but non-JSON response: ${text.slice(0, 200)}`);
+      }
+    }
   }
 }

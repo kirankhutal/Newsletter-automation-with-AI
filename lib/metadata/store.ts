@@ -1,7 +1,7 @@
 // lib/metadata/store.ts
 // Metadata storage for draft history and analytics
 
-import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
 export interface DraftMetadata {
@@ -43,11 +43,20 @@ const DRAFTS_FILE = join(METADATA_DIR, 'drafts.json');
 const FEEDBACK_FILE = join(METADATA_DIR, 'feedback.json');
 
 /**
- * Ensure metadata directory exists
+ * Ensure metadata directory exists and is writable
  */
-function ensureMetadataDir() {
-  if (!existsSync(METADATA_DIR)) {
-    mkdirSync(METADATA_DIR, { recursive: true });
+function ensureMetadataDir(): boolean {
+  try {
+    if (!existsSync(METADATA_DIR)) {
+      mkdirSync(METADATA_DIR, { recursive: true });
+    }
+    // Test write access by creating a temp file
+    const testFile = join(METADATA_DIR, '.write-test');
+    writeFileSync(testFile, 'test', 'utf-8');
+    unlinkSync(testFile);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -72,7 +81,10 @@ export function loadDrafts(): DraftMetadata[] {
  * Save draft metadata
  */
 export function saveDraft(draft: DraftMetadata): void {
-  ensureMetadataDir();
+  if (!ensureMetadataDir()) {
+    console.warn('[metadata] Cannot write drafts.json — filesystem is read-only on this platform. Skipping.');
+    return;
+  }
   const drafts = loadDrafts();
   
   // Check if draft for this week already exists
@@ -126,7 +138,10 @@ export function loadFeedback(): FeedbackEntry[] {
  * Save feedback entry
  */
 export function saveFeedback(feedback: FeedbackEntry): void {
-  ensureMetadataDir();
+  if (!ensureMetadataDir()) {
+    console.warn('[metadata] Cannot write feedback.json — filesystem is read-only on this platform. Skipping.');
+    return;
+  }
   const entries = loadFeedback();
   entries.push(feedback);
   

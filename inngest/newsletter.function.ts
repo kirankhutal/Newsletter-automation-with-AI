@@ -129,13 +129,20 @@ async function newsletterHandlerLogic(
         return { id: 'dry-run', web_url: 'https://app.beehiiv.com/dry-run', publish_url: '' };
       }
       console.log(`[${week}] Creating Beehiiv draft...`);
-      const result = await createBeehiivDraft({
-        title: draft.title,
-        subtitle: draft.subtitle,
-        htmlContent: draft.html_content,
-      });
-      metadata.beehiivPostId = result.id;
-      metadata.beehiivUrl = result.web_url;
+      let result;
+      try {
+        result = await createBeehiivDraft({
+          title: draft.title,
+          subtitle: draft.subtitle,
+          htmlContent: draft.html_content,
+        });
+        metadata.beehiivPostId = result.id;
+        metadata.beehiivUrl = result.web_url;
+      } catch (beehiivError) {
+        // Beehiiv API requires Enterprise plan — log and continue without it
+        console.warn(`[${week}] Beehiiv draft creation failed (enterprise plan required): ${beehiivError instanceof Error ? beehiivError.message : beehiivError}`);
+        result = { id: 'unavailable', web_url: 'https://app.beehiiv.com/posts/new', publish_url: '' };
+      }
       return result;
     }) as { id: string; web_url: string; publish_url: string };
 

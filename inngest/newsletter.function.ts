@@ -169,12 +169,14 @@ async function newsletterHandlerLogic(
       saveDraft(metadata as DraftMetadata);
     });
 
-    // STEP 7: Send success notification
+    // STEP 7: Send success notification with full content
     await runStep('send-notification', async () => {
       console.log(`[${week}] Sending notification...`);
       await sendNotification({
         success: true,
         title: draft.title,
+        subtitle: draft.subtitle,
+        htmlContent: draft.html_content,
         beehiivUrl: beehiivResult.web_url,
         weekDescription,
         inngestRunUrl: `https://app.inngest.com/runs/${eventId}`,

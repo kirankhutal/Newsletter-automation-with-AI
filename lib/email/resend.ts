@@ -4,6 +4,8 @@
 export interface NotificationOptions {
   success: boolean;
   title?: string;
+  subtitle?: string;
+  htmlContent?: string;
   beehiivUrl?: string;
   error?: string;
   failedStep?: string;
@@ -21,38 +23,38 @@ export async function sendNotification(options: NotificationOptions): Promise<vo
     return;
   }
 
-  const { success, title, beehiivUrl, error, failedStep, inngestRunUrl, weekDescription } = options;
+  const { success, title, subtitle, htmlContent, beehiivUrl, error, failedStep, inngestRunUrl, weekDescription } = options;
 
   const subject = success
-    ? `✅ Banking on AI draft ready — ${weekDescription}`
+    ? `📬 Banking on AI — ${title || weekDescription}`
     : `❌ Banking on AI automation failed — ${weekDescription}`;
 
-  const htmlContent = success
-    ? `
-      <h2>✅ Newsletter Draft Ready</h2>
-      <p><strong>Week:</strong> ${weekDescription}</p>
-      <p><strong>Title:</strong> ${title}</p>
+  const successHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+      <h2 style="color: #1a1a1a;">📬 Newsletter Draft Ready</h2>
+      <p style="color: #666;"><strong>Week:</strong> ${weekDescription}</p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      <p><strong>Title:</strong> ${title || 'N/A'}</p>
+      <p><strong>Subtitle:</strong> ${subtitle || 'N/A'}</p>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      <div style="font-size: 15px; line-height: 1.6;">
+        ${htmlContent || ''}
+      </div>
+      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      <p><a href="${beehiivUrl}" style="background: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">📤 Copy to Beehiiv</a></p>
+      ${inngestRunUrl ? `<p style="color: #999; font-size: 12px;"><a href="${inngestRunUrl}">View execution details</a></p>` : ''}
+    </div>
+  `;
 
-      <h3>Next Step</h3>
-      <p>Review the draft in Beehiiv and hit Send when ready.</p>
-      <p><a href="${beehiivUrl}">📬 Open draft in Beehiiv</a></p>
-
-      <p style="color: #666; font-size: 12px;">
-        <a href="${inngestRunUrl}">View execution details</a>
-      </p>
-    `
-    : `
-      <h2>❌ Newsletter Generation Failed</h2>
+  const failureHtml = `
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+      <h2 style="color: #d00;">❌ Newsletter Generation Failed</h2>
       <p><strong>Week:</strong> ${weekDescription}</p>
       <p><strong>Failed at:</strong> ${failedStep}</p>
       <p><strong>Error:</strong> ${error}</p>
-
-      <h3>Quick Actions</h3>
-      <ul>
-        <li><a href="${inngestRunUrl}">View error details in Inngest</a></li>
-        <li><a href="${inngestRunUrl}/replay">Replay from failed step</a></li>
-      </ul>
-    `;
+      ${inngestRunUrl ? `<p><a href="${inngestRunUrl}">View error details in Inngest</a></p>` : ''}
+    </div>
+  `;
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -64,7 +66,7 @@ export async function sendNotification(options: NotificationOptions): Promise<vo
       from: fromEmail,
       to: toEmail,
       subject,
-      html: htmlContent,
+      html: success ? successHtml : failureHtml,
     }),
   });
 

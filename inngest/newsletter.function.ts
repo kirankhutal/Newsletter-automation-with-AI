@@ -94,8 +94,8 @@ async function newsletterHandlerLogic(
 
       if (!qualityCheck.passed) {
         throw new Error(
-          `Quality checks failed: wordCount=${qualityCheck.details.wordCount} (need 800+), ` +
-          `links=${qualityCheck.details.linkCount} (need 5+), ` +
+          `Quality checks failed: wordCount=${qualityCheck.details.wordCount} (need 900+), ` +
+          `links=${qualityCheck.details.linkCount} (need 3+), ` +
           `pillars=${qualityCheck.details.foundPillars.join(', ')}`
         );
       }

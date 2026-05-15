@@ -50,7 +50,7 @@ CRITICAL: You MUST return a valid JSON object. Do not write any explanatory text
           { role: 'user', content: `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Here are the email sources to draw from:\n\n${options.emailContent}\n\nIMPORTANT: If the above sources are empty or say "no emails found", use YOUR KNOWLEDGE of this week's AI in finance news to generate the newsletter. Do not refuse. Do not ask for more input. Always return JSON.\n\nCRITICAL REQUIREMENT: The html_content must be AT LEAST 800 words. Write thoroughly across all 4 pillars. Do not stop until you have reached 800+ words.` },
         ],
         temperature: 0.7,
-        max_tokens: 16384,
+        max_tokens: 8192,
       }),
       signal: controller.signal,
     });
@@ -73,11 +73,38 @@ CRITICAL: You MUST return a valid JSON object. Do not write any explanatory text
     const jsonString = rawContent.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
 
     let parsed: GeneratedDraft;
+
+    // ── Defensive JSON parsing ──────────────────────────────────────────────
+    // Models can truncate mid-output; try to recover from partial JSON
     try {
       parsed = JSON.parse(jsonString) as GeneratedDraft;
     } catch {
-      throw new Error(`LLM returned invalid JSON: ${jsonString.slice(0, 500)}`);
+      // Try to find and parse just the html_content portion
+      const contentMatch = rawContent.match(/"html_content"\s*:\s*"([\s\S]*?)"(?:\s*,?\s*\}\s*$)?/);
+      if (contentMatch) {
+        const partialHtml = contentMatch[1]
+          .replace(/\\n/g, '\n')
+          .replace(/\\"/g, '"')
+          .replace(/\\\\/g, '\\');
+
+        const titleMatch = rawContent.match(/"title"\s*:\s*"([^"]+)"/);
+        const subtitleMatch = rawContent.match(/"subtitle"\s*:\s*"([^"]+)"/);
+
+        if (titleMatch && subtitleMatch && partialHtml.length > 200) {
+          parsed = {
+            title: titleMatch[1],
+            subtitle: subtitleMatch[1],
+            html_content: partialHtml,
+          };
+          console.warn('[LLM] Recovered truncated JSON — html_content extracted from partial output');
+        } else {
+          throw new Error(`LLM returned invalid JSON: ${jsonString.slice(0, 300)}`);
+        }
+      } else {
+        throw new Error(`LLM returned invalid JSON: ${jsonString.slice(0, 300)}`);
+      }
     }
+    // ─────────────────────────────────────────────────────────────────────
 
     if (!parsed.title || !parsed.subtitle || !parsed.html_content) {
       throw new Error('LLM response missing required fields: title, subtitle, html_content');

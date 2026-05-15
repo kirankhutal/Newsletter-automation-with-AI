@@ -1,111 +1,167 @@
-# 🔑 Get Your Credentials - Step by Step
+# Credentials Setup Guide
 
-Follow these instructions to gather each credential. Come back here and we'll add them to .env.local together.
-
----
-
-## 1️⃣ Anthropic API Key (5 minutes)
-
-**Steps:**
-1. Visit: https://console.anthropic.com
-2. Sign in (or create account if you don't have one)
-3. Click on your profile → "API Keys"
-4. Click "Create Key"
-5. Name it: "Banking on AI Newsletter"
-6. Copy the key (starts with `sk-ant-`)
-
-**Once you have it, tell me and I'll add it to .env.local**
+Follow this guide to gather all required credentials for the newsletter automation pipeline.
 
 ---
 
-## 2️⃣ Beehiiv API Key + Publication ID (10 minutes)
+## 1. LLM API (OpenAI-compatible)
 
-**Steps:**
-1. Visit: https://app.beehiiv.com
-2. Sign in to your account
-3. Go to: Settings → Integrations → API
-4. Click "Generate API Key"
-5. Copy the API key
+**Recommended: OpenRouter** (openrouter.ai) — supports many free models.
+
+1. Sign up at [openrouter.ai](https://openrouter.ai)
+2. Go to **Keys** → Create API key
+3. Optionally add credits for higher rate limits
+
+**Environment variables:**
+```env
+LLM_API_URL=https://openrouter.ai/api/v1/chat/completions
+LLM_API_KEY=sk-or-v2-...
+LLM_MODEL=qwen/qwen3.6-35b-a3b
+```
+
+**Supported model formats:**
+- OpenRouter models: `qwen/qwen3.6-35b-a3b`, `deepseek/deepseek-v4-flash`
+- Gemini (free): `gemini-2.0-flash` with `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`
+- Any OpenAI-compatible endpoint
+
+---
+
+## 2. Google OAuth (Gmail + Drive)
+
+### Step A: Create Google Cloud Project
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com)
+2. Create a new project (or use existing)
+3. Note your project ID
+
+### Step B: Enable APIs
+
+1. Go to **APIs & Services → Library**
+2. Enable **Gmail API**
+3. Enable **Google Drive API**
+
+### Step C: Configure OAuth Consent Screen
+
+1. Go to **APIs & Services → OAuth consent screen**
+2. Choose **External**
+3. Fill in app name and support email
+4. Skip scopes for now (add later)
+5. Add test users (your Google email)
+
+### Step D: Create Credentials
+
+1. Go to **APIs & Services → Credentials**
+2. Click **Create Credentials → OAuth client ID**
+3. Application type: **Web application**
+4. Name: "Newsletter Automation"
+5. Add authorized redirect URI: `https://developers.google.com/oauthplayground`
+6. Save Client ID and Client Secret
+
+### Step E: Get Refresh Token
+
+1. Go to [OAuth Playground](https://developers.google.com/oauthplayground)
+2. Click ⚙️ → check **"Use your own OAuth credentials"**
+3. Enter your Client ID and Client Secret
+4. In the left panel, enter these scopes (one at a time):
+   ```
+   https://www.googleapis.com/auth/gmail.readonly
+   https://www.googleapis.com/auth/drive.appdata
+   ```
+5. Click **Authorize APIs** → complete the flow
+6. Click **Exchange authorization code for tokens**
+7. Copy the **refresh token**
+
+**Environment variables:**
+```env
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REFRESH_TOKEN=...
+```
+
+---
+
+## 3. Beehiiv
+
+1. Sign up at [beehiiv.com](https://app.beehiiv.com)
+2. Go to **Settings → Integrations → API**
+3. Generate API key
 
 **For Publication ID:**
-1. Go back to your dashboard
-2. Look at the URL: `app.beehiiv.com/publications/pub_xxxxxxxxxx`
-3. Copy the `pub_xxxxxxxxxx` part
+Look at your dashboard URL: `app.beehiiv.com/publications/pub_xxxxxxxx`
 
-**Once you have both, tell me and I'll add them**
+**Note:** Beehiiv's API for creating posts requires an Enterprise plan. The pipeline handles this gracefully — you'll receive content via email instead.
 
----
-
-## 3️⃣ Inngest Keys (10 minutes)
-
-**Steps:**
-1. Visit: https://app.inngest.com
-2. Sign up with GitHub (free account)
-3. Click "Create App"
-4. Name: "banking-on-ai"
-5. Click "Create"
-6. Go to: Your App → Manage → Keys
-7. Copy "Event Key" (starts with `inngest_`)
-8. Copy "Signing Key" (starts with `signkey-`)
-
-**Once you have both keys, tell me**
+**Environment variables:**
+```env
+BEEHIIV_API_KEY=...
+BEEHIIV_PUBLICATION_ID=pub_xxxxxxxx  # include the pub_ prefix
+```
 
 ---
 
-## 4️⃣ Resend API Key (5 minutes)
+## 4. Resend (Email Notifications)
 
-**Steps:**
-1. Visit: https://resend.com
-2. Sign up (free account)
-3. Verify your email
-4. Go to: API Keys
-5. Click "Create API Key"
-6. Name: "Banking on AI Automation"
-7. Copy the key (starts with `re_`)
+1. Sign up at [resend.com](https://resend.com)
+2. Verify your domain or email
+3. Go to **API Keys** → Create key
 
-**Once you have it, tell me**
-
----
-
-## 5️⃣ Google Cloud OAuth (30-45 minutes) ⚠️ Most Complex
-
-This is the most involved. Let's do this one together when you're ready.
-
-**High-level steps:**
-1. Create Google Cloud project
-2. Enable Gmail API and Google Drive API
-3. Configure OAuth consent screen
-4. Create OAuth 2.0 credentials
-5. Download credentials JSON
-6. Run script to get refresh token
-
-**We'll do this step-by-step together when you're ready**
+**Environment variables:**
+```env
+RESEND_API_KEY=re_...
+RESEND_FROM_EMAIL=automation@yourdomain.com
+NOTIFICATION_EMAIL=your@email.com
+```
 
 ---
 
-## 🎯 Recommended Order
+## 5. Inngest
 
-**Do these now (quick - 30 minutes total):**
-1. ✅ CRON_SECRET (already done!)
-2. Anthropic API Key
-3. Beehiiv API Key + Pub ID
-4. Inngest Keys
-5. Resend API Key
+1. Sign up at [app.inngest.com](https://app.inngest.com) with GitHub
+2. Click **Create App** → name it `banking-on-ai`
+3. Go to **Settings → Environment**
+4. Copy:
+   - **Event Key** → `INNGEST_EVENT_KEY`
+   - **Signing Key** → `INNGEST_SIGNING_KEY`
+5. From the app URL, extract the app ID (e.g., `banking-on-ai`) → `INNGEST_APP_ID`
 
-**Save for later (45 minutes):**
-6. Google OAuth (we'll do this together)
-
-**After deployment:**
-7. Beehiiv MCP URL (we'll get this after deploying)
+**Environment variables:**
+```env
+INNGEST_EVENT_KEY=...
+INNGEST_SIGNING_KEY=...
+INNGEST_APP_ID=banking-on-ai
+```
 
 ---
 
-## 📋 What to Do
+## 6. App Config
 
-1. Open this file in your browser or editor
-2. Go through steps 1-4 above
-3. As you get each credential, come back and tell me
-4. I'll add them to your .env.local file
-5. We'll tackle Google OAuth together when you're ready
+```env
+# Set to false when ready to send to Beehiiv (requires Enterprise plan)
+DRY_RUN=true
 
-**Ready to start? Which credential do you want to get first?**
+# Any strong random string for manual trigger auth
+CRON_SECRET=generate-a-strong-random-string
+```
+
+---
+
+## Quick Credential Checklist
+
+| Credential | Where to get it | Status |
+|---|---|---|
+| `LLM_API_URL` | openrouter.ai | |
+| `LLM_API_KEY` | openrouter.ai/keys | |
+| `LLM_MODEL` | openrouter.ai/models | |
+| `GOOGLE_CLIENT_ID` | console.cloud.google.com | |
+| `GOOGLE_CLIENT_SECRET` | console.cloud.google.com | |
+| `GOOGLE_REFRESH_TOKEN` | oauthplayground.com | |
+| `BEEHIIV_API_KEY` | app.beehiiv.com | |
+| `BEEHIIV_PUBLICATION_ID` | app.beehiiv.com | |
+| `RESEND_API_KEY` | resend.com | |
+| `RESEND_FROM_EMAIL` | your domain | |
+| `NOTIFICATION_EMAIL` | your email | |
+| `INNGEST_EVENT_KEY` | app.inngest.com | |
+| `INNGEST_SIGNING_KEY` | app.inngest.com | |
+| `INNGEST_APP_ID` | app.inngest.com | |
+| `DRY_RUN` | set to `true` for testing | |
+| `CRON_SECRET` | generate at [lastpass.com/password-generator](https://lastpass.com) | |

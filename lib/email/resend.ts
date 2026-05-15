@@ -16,7 +16,7 @@ export interface NotificationOptions {
 export async function sendNotification(options: NotificationOptions): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'Banking on AI <automation@yourdomain.com>';
-  const toEmail = process.env.NOTIFICATION_EMAIL || 'kirankhutal@gmail.com';
+  const toEmail = process.env.NOTIFICATION_EMAIL || 'your@email.com';
 
   if (!apiKey) {
     console.warn('RESEND_API_KEY not set — skipping notification');

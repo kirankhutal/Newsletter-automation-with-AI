@@ -10,7 +10,7 @@
 
 **Purpose:** Fully automated weekly newsletter pipeline that drafts, validates, and creates a Beehiiv draft every Sunday at 9am EST — with zero manual intervention.
 
-**Vision:** A hands-off system where the newsletter "just happens" each week. Kiran receives a preview email, reviews in Beehiiv, and hits send himself. Future iteration adds auto-publish on approval.
+**Vision:** A hands-off system where the newsletter "just happens" each week. The author receives a preview email, reviews it, and hits send. Future iteration adds auto-publish on approval.
 
 **Stack:** Next.js + Inngest + Beehiiv + Gmail API + any free LLM API
 
@@ -175,7 +175,7 @@ BEEHIIV_PUBLICATION_ID=...
 
 # Email notifications
 RESEND_API_KEY=re_...
-NOTIFICATION_EMAIL=kirankhutal@gmail.com
+NOTIFICATION_EMAIL=your@email.com
 
 # App
 INNGEST_EVENT_KEY=...
@@ -285,4 +285,4 @@ The newsletter follows the "Banking on AI" editor voice defined in `skills/banki
 
 ---
 
-*Design approved by Kiran on 2026-05-11*
+*Design approved on 2026-05-11*

@@ -162,7 +162,7 @@ async function sendHealthAlert(results: HealthCheckResult[]): Promise<void> {
   `;
 
   const resendApiKey = process.env.RESEND_API_KEY;
-  const toEmail = process.env.NOTIFICATION_EMAIL || 'kirankhutal@gmail.com';
+  const toEmail = process.env.NOTIFICATION_EMAIL || 'your@email.com';
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'automation@yourdomain.com';
 
   if (!resendApiKey) {

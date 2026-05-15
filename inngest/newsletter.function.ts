@@ -85,7 +85,7 @@ async function newsletterHandlerLogic(
       const qualityCheck = validateContent(
         draft.title,
         draft.html_content,
-        ['AI Innovation', 'Banking Tech', 'Regulation', 'Market Trends']
+        ['AI Innovation', 'Banking Tech', 'Canadian', 'Market Trends']
       );
       metadata.wordCount = qualityCheck.details.wordCount;
       metadata.linkCount = qualityCheck.details.linkCount;

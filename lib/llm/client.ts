@@ -50,7 +50,7 @@ CRITICAL: You MUST return a valid JSON object. Do not write any explanatory text
           { role: 'user', content: `Today is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Here are the email sources to draw from:\n\n${options.emailContent}\n\nIMPORTANT: If the above sources are empty or say "no emails found", use YOUR KNOWLEDGE of this week's AI in finance news to generate the newsletter. Do not refuse. Do not ask for more input. Always return JSON.\n\nCRITICAL REQUIREMENT: The html_content must be AT LEAST 800 words. Write thoroughly across all 4 pillars. Do not stop until you have reached 800+ words.` },
         ],
         temperature: 0.7,
-        max_tokens: 8192,
+        max_tokens: 16384,
       }),
       signal: controller.signal,
     });

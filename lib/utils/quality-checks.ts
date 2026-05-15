@@ -29,7 +29,7 @@ export function validateContent(
 ): QualityCheckResult {
   const checks = {
     subjectLength: title.length >= 20 && title.length <= 60,
-    wordCount: countWords(content) >= 800,
+    wordCount: countWords(content) >= 900,
     linkCount: countLinks(content) >= 5,
     hasPillars: checkPillars(content, pillars),
     validHTML: validateHTML(content),

@@ -61,6 +61,10 @@ async function newsletterHandlerLogic(
       const emails = await fetchRelevantEmails();
       const formatted = formatEmailsForLLM(emails);
       metadata.sourceEmailCount = emails.length;
+      console.log(`[${week}] Found ${emails.length} emails — formatted content: ${formatted.length} chars`);
+      if (emails.length > 0) {
+        emails.forEach(e => console.log(`  - "${e.subject}" from ${e.from} (body: ${e.body.length} chars)`));
+      }
       return { emails, formatted };
     }) as { formatted: string };
 

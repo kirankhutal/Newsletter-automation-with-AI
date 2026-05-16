@@ -10,6 +10,55 @@ export interface EmailItem {
   from: string;
   subject: string;
   date: string;
+  body: string;
+}
+
+// ── Helper: recursively extract text body from a message payload ─────────────
+function extractBody(payload: {
+  body?: { data?: string };
+  parts?: Array<{
+    mimeType: string;
+    body?: { data?: string };
+    parts?: unknown[];
+  }>;
+}): string | null {
+  if (!payload) return null;
+
+  // Direct body data
+  if (payload.body?.data) {
+    try {
+      return Buffer.from(payload.body.data, 'base64').toString('utf-8');
+    } catch {
+      return null;
+    }
+  }
+
+  // Multipart — recurse into parts
+  if (payload.parts && payload.parts.length > 0) {
+    for (const part of payload.parts) {
+      const mimeType = (part as { mimeType: string }).mimeType;
+      if (mimeType === 'text/plain') {
+        const data = (part as { body?: { data?: string } }).body?.data;
+        if (data) {
+          try {
+            return Buffer.from(data, 'base64').toString('utf-8');
+          } catch {
+            return null;
+          }
+        }
+      }
+      // Recurse into nested multipart
+      const nested = extractBody(part as Parameters<typeof extractBody>[0]);
+      if (nested) return nested;
+    }
+    // Fall back to first text part if no plain text found
+    for (const part of payload.parts) {
+      const nested = extractBody(part as Parameters<typeof extractBody>[0]);
+      if (nested) return nested;
+    }
+  }
+
+  return null;
 }
 
 async function gmailRequest<T>(token: string, path: string): Promise<T> {
@@ -45,14 +94,18 @@ export async function fetchRelevantEmails(): Promise<EmailItem[]> {
   );
 
   if (!searchResult.messages || searchResult.messages.length === 0) {
+    console.log('[Gmail] No emails found matching query');
     return [];
   }
 
-  // Fetch full message details for each email
+  console.log(`[Gmail] Found ${searchResult.messages.length} matching emails`);
+
+  // Fetch full message details for each email (includes body)
   const emails: EmailItem[] = [];
 
   for (const msg of searchResult.messages.slice(0, 8)) {
     try {
+      // Use format=full to get the complete message including body
       const detail = await gmailRequest<{
         id: string;
         threadId: string;
@@ -60,8 +113,14 @@ export async function fetchRelevantEmails(): Promise<EmailItem[]> {
         payload: {
           headers: Array<{ name: string; value: string }>;
           internalDate: string;
+          body?: { data?: string };
+          parts?: Array<{
+            mimeType: string;
+            body?: { data?: string };
+            parts?: unknown[];
+          }>;
         };
-      }>(token, `/users/me/messages/${msg.id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`);
+      }>(token, `/users/me/messages/${msg.id}?format=full`);
 
       const headers = detail.payload.headers;
       const fromHeader = headers.find(h => h.name === 'From')?.value || 'Unknown';
@@ -74,6 +133,14 @@ export async function fetchRelevantEmails(): Promise<EmailItem[]> {
       const timestamp = parseInt(detail.payload.internalDate);
       const date = isNaN(timestamp) ? new Date().toISOString() : new Date(timestamp).toISOString();
 
+      // Extract full body text
+      const rawBody = extractBody(detail.payload) || detail.snippet;
+
+      // Clean body: strip excessive whitespace and truncate to 2000 chars per email
+      const body = rawBody.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, 2000);
+
+      console.log(`[Gmail] Fetched email: "${subjectHeader}" — body length: ${body.length} chars`);
+
       emails.push({
         id: detail.id,
         threadId: detail.threadId,
@@ -81,9 +148,10 @@ export async function fetchRelevantEmails(): Promise<EmailItem[]> {
         from,
         subject: subjectHeader,
         date,
+        body,
       });
     } catch (err) {
-      console.warn(`Failed to fetch email ${msg.id}:`, err);
+      console.warn(`[Gmail] Failed to fetch email ${msg.id}:`, err);
     }
   }
 
@@ -105,6 +173,6 @@ export function formatEmailsForLLM(emails: EmailItem[]): string {
 From: ${email.from}
 Subject: ${email.subject}
 Date: ${date}
-Preview: ${email.snippet}`;
+Body: ${email.body}`;
   }).join('\n\n');
 }

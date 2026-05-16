@@ -31,7 +31,7 @@ export function validateContent(
     subjectLength: title.length >= 20 && title.length <= 60,
     wordCount: countWords(content) >= 900,
     linkCount: countLinks(content) >= 3,
-    hasPillars: checkPillars(content, pillars),
+    hasPillars: findPillars(content, pillars).length >= 3,
     validHTML: validateHTML(content),
   };
 

@@ -92,12 +92,14 @@ async function newsletterHandlerLogic(
       metadata.pillarsFound = qualityCheck.details.foundPillars;
       metadata.qualityChecks = qualityCheck.checks;
 
+      // Quality check failures are logged but don't block the pipeline
       if (!qualityCheck.passed) {
-        throw new Error(
-          `Quality checks failed: wordCount=${qualityCheck.details.wordCount} (need 900+), ` +
-          `links=${qualityCheck.details.linkCount} (need 3+), ` +
-          `pillars=${qualityCheck.details.foundPillars.join(', ')}`
-        );
+        const failed = Object.entries(qualityCheck.checks)
+          .filter(([, v]) => !v)
+          .map(([k]) => k);
+        console.warn(`[${week}] Quality warnings: ${failed.join(', ')} — content will still be sent`);
+      } else {
+        console.log(`[${week}] All quality checks passed`);
       }
 
       // Check similarity to last week
@@ -108,16 +110,17 @@ async function newsletterHandlerLogic(
           lastDraft.title + ' ' + lastDraft.subtitle
         );
         if (similarity.tooSimilar) {
-          throw new Error(
-            `Content too similar to last week (${(similarity.score * 100).toFixed(0)}% overlap). Regenerate with more differentiation.`
-          );
+          console.warn(`[${week}] Content similar to last week (${(similarity.score * 100).toFixed(0)}%) — flag for review`);
+        } else {
+          console.log(`[${week}] Similarity score: ${(similarity.score * 100).toFixed(0)}% (${similarity.method})`);
         }
-        console.log(`[${week}] Similarity score: ${(similarity.score * 100).toFixed(0)}% (${similarity.method})`);
       }
 
-      console.log(`[${week}] Quality checks passed`);
-      return qualityCheck;
-    }) as { details: { wordCount: number; linkCount: number; foundPillars: string[] } };
+      const qualityWarnings = Object.entries(qualityCheck.checks)
+        .filter(([, v]) => !v)
+        .map(([k]) => k);
+      return { ...qualityCheck, qualityWarnings };
+    }) as { details: { wordCount: number; linkCount: number; foundPillars: string[] }; qualityWarnings: string[] };
 
     // STEP 4: Create draft in Beehiiv
     const beehiivResult = await runStep('publish-to-beehiiv', async () => {
@@ -169,9 +172,10 @@ async function newsletterHandlerLogic(
       saveDraft(metadata as DraftMetadata);
     });
 
-    // STEP 7: Send success notification with full content
+    // STEP 7: Send notification — always send content, even with quality warnings
     await runStep('send-notification', async () => {
       console.log(`[${week}] Sending notification...`);
+      const failedChecks = validation.qualityWarnings || [];
       await sendNotification({
         success: true,
         title: draft.title,
@@ -180,6 +184,10 @@ async function newsletterHandlerLogic(
         beehiivUrl: beehiivResult.web_url,
         weekDescription,
         inngestRunUrl: `https://app.inngest.com/runs/${eventId}`,
+        wordCount: metadata.wordCount,
+        linkCount: metadata.linkCount,
+        pillarsFound: metadata.pillarsFound,
+        qualityWarnings: failedChecks.length > 0 ? failedChecks : undefined,
       });
     });
 

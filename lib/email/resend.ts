@@ -11,6 +11,10 @@ export interface NotificationOptions {
   failedStep?: string;
   inngestRunUrl?: string;
   weekDescription: string;
+  wordCount?: number;
+  linkCount?: number;
+  pillarsFound?: string[];
+  qualityWarnings?: string[];
 }
 
 export async function sendNotification(options: NotificationOptions): Promise<void> {
@@ -23,11 +27,27 @@ export async function sendNotification(options: NotificationOptions): Promise<vo
     return;
   }
 
-  const { success, title, subtitle, htmlContent, beehiivUrl, error, failedStep, inngestRunUrl, weekDescription } = options;
+  const { success, title, subtitle, htmlContent, beehiivUrl, error, failedStep, inngestRunUrl, weekDescription, wordCount, linkCount, pillarsFound, qualityWarnings } = options;
 
   const subject = success
     ? `📬 Banking on AI — ${title || weekDescription}`
     : `❌ Banking on AI automation failed — ${weekDescription}`;
+
+  const warningsHtml = qualityWarnings && qualityWarnings.length > 0
+    ? `<div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 12px; margin-bottom: 20px;">
+        <strong style="color: #856404;">⚠️ Quality warnings:</strong> ${qualityWarnings.join(', ')}
+       </div>`
+    : `<div style="background: #d4edda; border: 1px solid #28a745; border-radius: 4px; padding: 12px; margin-bottom: 20px;">
+        <strong style="color: #155724;">✅ All quality checks passed</strong>
+       </div>`;
+
+  const qualitySummaryHtml = (wordCount !== undefined || pillarsFound)
+    ? `<div style="background: #f8f9fa; border-radius: 4px; padding: 12px; margin-bottom: 20px; font-size: 13px; color: #666;">
+        ${wordCount !== undefined ? `📝 <strong>Words:</strong> ${wordCount} &nbsp;|&nbsp;` : ''}
+        ${linkCount !== undefined ? `🔗 <strong>Links:</strong> ${linkCount} &nbsp;|&nbsp;` : ''}
+        ${pillarsFound ? `🏛️ <strong>Pillars:</strong> ${pillarsFound.join(', ')}` : ''}
+       </div>`
+    : '';
 
   const successHtml = `
     <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
@@ -37,6 +57,8 @@ export async function sendNotification(options: NotificationOptions): Promise<vo
       <p><strong>Title:</strong> ${title || 'N/A'}</p>
       <p><strong>Subtitle:</strong> ${subtitle || 'N/A'}</p>
       <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+      ${warningsHtml}
+      ${qualitySummaryHtml}
       <div style="font-size: 15px; line-height: 1.6;">
         ${htmlContent || ''}
       </div>
